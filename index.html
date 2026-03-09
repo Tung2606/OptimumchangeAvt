@@ -18,7 +18,6 @@
             min-height: 100vh;
         }
 
-        /* 2. THAY PHẦN TRANG TRÍ THANH TIÊU ĐỀ THÀNH ẢNH SỐ 2 */
         header {
             background: url('LinkedIn_cover_-_5.webp') no-repeat center;
             background-size: cover;
@@ -38,6 +37,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             max-width: 90%;
             text-align: center;
+            margin-bottom: 50px;
         }
 
         .control-panel {
@@ -56,30 +56,25 @@
             align-items: center;
         }
 
-        h3 { margin-top: 0; color: #34495e; font-size: 16px; text-transform: uppercase; }
+        h3 { margin-top: 0; color: #34495e; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 
-        .btn-upload {
-            padding: 10px 15px;
-            background: #3498db;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-download {
-            padding: 12px 25px;
-            background: #27ae60;
-            color: white;
+        /* Nút bấm */
+        .btn {
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 16px;
             transition: 0.3s;
+            font-size: 14px;
         }
 
-        .btn-download:hover { background: #2ecc71; transform: translateY(-2px); }
+        .btn-upload { background: #3498db; color: white; }
+        .btn-download { background: #27ae60; color: white; font-size: 16px; padding: 12px 30px; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .btn-clear { background: #95a5a6; color: white; }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
         .icon-gallery {
             display: flex;
@@ -87,9 +82,9 @@
             background: #f9f9f9;
             padding: 10px;
             border-radius: 10px;
+            border: 1px solid #ddd;
         }
 
-        /* HIỂN THỊ ẢNH SỐ 1 TRONG DANH SÁCH ICON */
         .icon-item {
             width: 60px;
             height: auto;
@@ -106,6 +101,15 @@
             border-radius: 5px;
             overflow: hidden;
             background: #fafafa;
+            display: inline-block;
+        }
+
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -118,9 +122,9 @@
     <div class="main-container">
         <div class="control-panel">
             <div class="section">
-                <h3>1. Upload Background</h3>
+                <h3>1. Background</h3>
                 <input type="file" id="imageLoader" style="display: none;">
-                <label for="imageLoader" class="btn-upload">Choose Image</label>
+                <label for="imageLoader" class="btn btn-upload">Choose Image</label>
             </div>
 
             <div class="section">
@@ -135,9 +139,12 @@
             <canvas id="editorCanvas"></canvas>
         </div>
 
-        <div style="margin-top: 30px;">
-            <button class="btn-download" onclick="exportImage()">Download Final Image</button>
+        <div class="action-buttons">
+            <button class="btn btn-download" onclick="exportImage()">Download Result</button>
+            <button class="btn btn-delete" onclick="deleteSelected()">Delete Selected</button>
+            <button class="btn btn-clear" onclick="clearAll()">Clear All Icons</button>
         </div>
+        <p style="color: #7f8c8d; font-size: 12px; margin-top: 15px;">Tip: Click an icon to select, then press "Delete" to remove it.</p>
     </div>
 
     <script>
@@ -145,6 +152,7 @@
         canvas.setWidth(600);
         canvas.setHeight(400);
 
+        // 1. Tải ảnh nền
         document.getElementById('imageLoader').onchange = function(e) {
             let reader = new FileReader();
             reader.onload = function(event) {
@@ -159,21 +167,50 @@
             reader.readAsDataURL(e.target.files[0]);
         };
 
+        // 2. Thêm Sticker
         function addSticker(imgUrl) {
             fabric.Image.fromURL(imgUrl, function(img) {
                 img.scale(0.3); 
                 img.set({
-                    left: 100,
-                    top: 100,
+                    left: 50,
+                    top: 50,
                     cornerColor: '#3498db',
                     cornerSize: 10,
                     transparentCorners: false
                 });
                 canvas.add(img);
                 canvas.setActiveObject(img);
-            });
+            }, { crossOrigin: 'anonymous' });
         }
 
+        // 3. Xóa icon đang chọn
+        function deleteSelected() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                canvas.remove(activeObject);
+                canvas.discardActiveObject().renderAll();
+            } else {
+                alert("Please click on a sticker to select it first!");
+            }
+        }
+
+        // 4. Xóa sạch tất cả icon
+        function clearAll() {
+            if (confirm("Remove all stickers?")) {
+                const objects = canvas.getObjects().filter(obj => obj !== canvas.backgroundImage);
+                objects.forEach(obj => canvas.remove(obj));
+                canvas.discardActiveObject().renderAll();
+            }
+        }
+
+        // 5. Cho phép dùng phím Delete trên bàn phím
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Delete" || e.key === "Backspace") {
+                deleteSelected();
+            }
+        });
+
+        // 6. Tải ảnh về
         function exportImage() {
             const dataURL = canvas.toDataURL({ format: 'png', quality: 1 });
             const link = document.createElement('a');
